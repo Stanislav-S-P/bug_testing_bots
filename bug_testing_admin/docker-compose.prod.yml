@@ -1,0 +1,50 @@
+version: '3'
+
+services:
+  web:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    command: gunicorn bug_testing_admin.wsgi:application --bind 0.0.0.0:8000
+    expose:
+      - 8000
+    volumes:
+      - static_volume:/home/app/web/staticfiles
+      - media_volume:/home/app/web/mediafiles
+    env_file:
+      - ./.env.prod
+    depends_on:
+      - db
+  db:
+    image: postgres:12.0-alpine
+    volumes:
+      - dmp_postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./.env.prod.db
+  nginx:
+    build: ./nginx
+    ports:
+      - 8000:80
+    volumes:
+      - static_volume:/home/app/web/staticfiles
+      - media_volume:/home/app/web/mediafiles
+    depends_on:
+      - web
+  bug_report:
+    build:
+      context: ../bug_report_bot
+      dockerfile: Dockerfile
+    volumes:
+      - media_volume:/home/app/web/mediafiles
+  zbt_bot:
+    build:
+      context: ../zbt_bot
+      dockerfile: Dockerfile
+    volumes:
+      - media_volume:/home/app/web/mediafiles
+
+
+volumes:
+  dmp_postgres_data:
+  static_volume:
+  media_volume:
